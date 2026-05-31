@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Orion · 智能工作站</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root,[data-theme="github-dark"]{--bg:#0d1117;--surface:#161b22;--surface2:#1f2937;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--orange:#db6d28;--purple:#bc8cff;--shadow:0 4px 24px rgba(0,0,0,.4)}
+[data-theme="dracula"]{--bg:#282a36;--surface:#343746;--surface2:#44475a;--border:#6272a4;--text:#f8f8f2;--muted:#6272a4;--accent:#bd93f9;--green:#50fa7b;--yellow:#f1fa8c;--red:#ff5555;--orange:#ffb86c;--purple:#bd93f9;--shadow:0 4px 24px rgba(0,0,0,.5)}
+[data-theme="nord"]{--bg:#2e3440;--surface:#3b4252;--surface2:#434c5e;--border:#4c566a;--text:#eceff4;--muted:#81a1c1;--accent:#88c0d0;--green:#a3be8c;--yellow:#ebcb8b;--red:#bf616a;--orange:#d08770;--purple:#b48ead;--shadow:0 4px 24px rgba(0,0,0,.4)}
+[data-theme="github-light"]{--bg:#ffffff;--surface:#f6f8fa;--surface2:#eaeef2;--border:#d0d7de;--text:#1f2328;--muted:#656d76;--accent:#0969da;--green:#1a7f37;--yellow:#9a6700;--red:#cf222e;--orange:#bc4c00;--purple:#8250df;--shadow:0 4px 24px rgba(0,0,0,.15)}
+[data-theme="solarized-light"]{--bg:#fdf6e3;--surface:#eee8d5;--surface2:#e0dcc7;--border:#d3c9a6;--text:#657b83;--muted:#93a1a1;--accent:#268bd2;--green:#859900;--yellow:#b58900;--red:#dc322f;--orange:#cb4b16;--purple:#6c71c4;--shadow:0 4px 24px rgba(0,0,0,.12)}
+[data-theme="one-light"]{--bg:#fafafa;--surface:#f0f0f0;--surface2:#e4e4e4;--border:#d4d4d4;--text:#383a42;--muted:#a0a1a7;--accent:#4078f2;--green:#50a14f;--yellow:#c18401;--red:#e45649;--orange:#da8548;--purple:#a626a4;--shadow:0 4px 24px rgba(0,0,0,.12)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+html{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+html::-webkit-scrollbar{width:6px}
+html::-webkit-scrollbar-track{background:transparent}
+html::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+html::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+header h1{font-size:20px;font-weight:600;color:var(--accent)}header h1 span{color:var(--text)}
+header .stats{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+header .stat{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)}
+header .stat b{color:var(--text);font-size:15px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+.dot-green{background:var(--green)}.dot-yellow{background:var(--yellow)}.dot-red{background:var(--red)}.dot-purple{background:var(--purple)}.dot-gray{background:var(--muted)}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+
+/* 断点通知栏 */
+#checkpointBar{display:none;background:rgba(248,81,73,.1);border:1px solid var(--red);border-radius:8px;padding:16px;margin-bottom:16px;animation:slideIn .3s}
+#checkpointBar h3{color:var(--red);font-size:15px;margin-bottom:8px}
+#checkpointBar p{font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5}
+#checkpointBar .btns{display:flex;gap:8px;flex-wrap:wrap}
+.cp-badge{background:rgba(248,81,73,.15);color:var(--red);padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;display:inline-block;margin-bottom:8px}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:24px}
+.panel h2{font-size:16px;margin-bottom:16px;color:var(--accent)}
+.form-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.form-row input,.form-row select{padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;flex:1;min-width:150px}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--accent)}
+.tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .2s}
+.tag:hover{color:var(--text);border-color:var(--accent)}.tag.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.form-hint{font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:12px}
+
+.task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .2s;cursor:pointer}
+.task-card:hover{border-color:var(--accent)}
+.task-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.task-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.task-card-title{font-size:14px;font-weight:600;flex:1}
+.task-card-id{font-size:11px;color:var(--muted);font-family:monospace}
+.task-card-desc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.task-card-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-pending{background:var(--surface2);color:var(--muted)}
+.badge-ready{background:rgba(88,166,255,.15);color:var(--accent)}
+.badge-in-progress{background:rgba(210,153,34,.15);color:var(--yellow)}
+.badge-done{background:rgba(63,185,80,.15);color:var(--green)}
+.badge-blocked{background:rgba(248,81,73,.15);color:var(--red)}
+.badge-review{background:rgba(188,140,255,.15);color:var(--purple)}
+.task-card-footer{display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-size:12px;cursor:pointer;transition:all .2s;background:var(--surface);color:var(--text)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-success{border-color:var(--green);color:var(--green)}
+.btn-success:hover{background:rgba(63,185,80,.1)}
+.btn-danger{border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:rgba(248,81,73,.1)}
+.btn-warn{border-color:var(--yellow);color:var(--yellow)}
+.btn-warn:hover{background:rgba(210,153,34,.1)}
+.btn-sm{padding:3px 10px;font-size:11px}
+
+.skills-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.skill-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.skill-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.skill-desc{font-size:12px;color:var(--muted);margin-bottom:8px}
+.skill-tags{display:flex;gap:4px;flex-wrap:wrap}
+.skill-tag{padding:1px 6px;background:var(--surface2);border-radius:4px;font-size:10px;color:var(--muted)}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 20px;box-shadow:var(--shadow);z-index:999;animation:slideIn .3s;max-width:360px}
+.toast.success{border-color:var(--green)}.toast.error{border-color:var(--red)}.toast.info{border-color:var(--accent)}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty h3{font-size:18px;margin-bottom:8px}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted)}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){.task-grid,.skills-panel{grid-template-columns:1fr}.form-row{flex-direction:column}}
+
+/* 执行追踪面板 — 多标签 */
+#tracePanel{display:none;background:var(--surface);border:1px solid var(--accent);border-radius:8px;margin-bottom:24px;overflow:hidden}
+#traceTabs{display:flex;gap:0;background:var(--surface2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+#traceTabs::-webkit-scrollbar{height:4px}
+#traceTabs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.trace-tab{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:12px;color:var(--muted);cursor:pointer;border-right:1px solid var(--border);white-space:nowrap;transition:all .15s;user-select:none;min-width:0}
+.trace-tab:hover{color:var(--text);background:var(--surface)}
+.trace-tab.active{color:var(--accent);background:var(--bg);border-bottom:2px solid var(--accent);margin-bottom:-1px}
+.trace-tab .tab-info-group{display:flex;flex-direction:column;min-width:0;gap:2px}
+.trace-tab .tab-title{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.trace-tab .tab-stats{font-size:10px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.trace-tab .tab-stats .stat-item{white-space:nowrap}
+.trace-tab .tab-stats .stat-bar{width:32px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin:0 2px}
+.trace-tab .tab-stats .stat-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.trace-tab .tab-close{margin-left:2px;font-size:14px;line-height:1;opacity:.5;cursor:pointer;padding:0 2px;flex-shrink:0}
+.trace-tab .tab-close:hover{opacity:1;color:var(--red)}
+.trace-tab .tab-status{font-size:10px;flex-shrink:0}
+.tab-ctrl-group{display:flex;gap:1px;margin:0 2px;flex-shrink:0}
+.tab-ctrl-btn{font-size:11px;line-height:1;padding:2px 5px;border:1px solid transparent;border-radius:3px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab-ctrl-btn:hover{background:var(--surface);color:var(--text)}
+.tab-ctrl-btn.pause:hover{color:var(--yellow)}
+.tab-ctrl-btn.stop:hover{color:var(--red)}
+#traceContent{padding:12px 16px;max-height:360px;overflow-y:auto}
+.trace-pane{display:none}
+.trace-pane.active{display:block}
+.trace-entry{font-family:monospace;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px}
+.trace-time{color:var(--muted);white-space:nowrap;min-width:70px}
+.trace-icon{min-width:18px;text-align:center}
+.trace-msg{color:var(--text);word-break:break-all}
+.trace-msg.error{color:var(--red)}
+.trace-msg.stream{color:var(--accent)}
+.trace-chat-area{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.trace-chat-area input{flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px}
+.trace-chat-area input:focus{outline:none;border-color:var(--accent)}
+.trace-chat-area input::placeholder{color:var(--muted)}
+.trace-chat-area button{padding:8px 16px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer;white-space:nowrap}
+.trace-chat-area button:hover{filter:brightness(1.1)}
+.trace-chat-hint{font-size:11px;color:var(--muted);padding:4px 16px 8px;text-align:center}
+.limit-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.limit-row label{font-size:11px;color:var(--muted)}
+.limit-row input{width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;text-align:right}
+.limit-row input:focus{outline:none;border-color:var(--accent)}
+
+/* 版本历史 */
+#versionPanel{display:none;background:var(--surface);border:1px solid var(--purple);border-radius:8px;padding:12px 16px;margin-bottom:24px;max-height:280px;overflow-y:auto}
+#versionPanel h3{font-size:14px;color:var(--purple);margin-bottom:8px}
+.version-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:flex-start}
+.version-hash{font-family:monospace;font-size:11px;color:var(--accent);min-width:80px;cursor:pointer}
+.version-hash:hover{text-decoration:underline}
+.version-info{flex:1;min-width:0}
+.version-desc{color:var(--text);margin-bottom:2px}
+.version-files{color:var(--muted);font-size:11px;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.version-file{background:var(--surface2);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px}
+.version-time{color:var(--muted);font-size:11px;white-space:nowrap;min-width:60px;text-align:right}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧠 Orion <span>工作站</span></h1>
+  <select id="themeSelector" onchange="switchTheme(this.value)" style="padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;cursor:pointer">
+    <option value="github-dark">🌙 GitHub Dark</option>
+    <option value="dracula">🧛 Dracula</option>
+    <option value="nord">❄️ Nord</option>
+    <option value="github-light">☀️ GitHub Light</option>
+    <option value="solarized-light">📜 Solarized Light</option>
+    <option value="one-light">💡 One Light</option>
+  </select>
+  <div class="stats" id="headerStats">
+    <span class="stat"><span class="dot dot-green"></span> <b id="statDone">0</b> 完成</span>
+    <span class="stat"><span class="dot dot-yellow"></span> <b id="statProgress">0</b> 进行中</span>
+    <span class="stat"><span class="dot dot-red"></span> <b id="statBlocked">0</b> 阻塞</span>
+    <span class="stat"><span class="dot dot-purple"></span> <b id="statCp">0</b> 断点</span>    <button class="btn btn-sm btn-success" onclick="getNextTask()" style="margin-left:8px" title="找到下一个该做的任务">▶ 下一个</button>
+    <button class="btn btn-sm" id="autoToggleBtn" onclick="toggleAutoMode()" style="margin-left:4px">⚡ 自动</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- 断点通知栏（SSE 实时更新） -->
+  <div id="checkpointBar">
+    <span class="cp-badge">📌 人类断点</span>
+    <h3 id="cpTitle">等待确认</h3>
+    <p id="cpMessage">内容加载中...</p>
+    <div class="btns" id="cpButtons">
+      <button class="btn btn-sm btn-success" onclick="respondCheckpoint('approve')">✅ 批准继续</button>
+      <button class="btn btn-sm btn-warn" onclick="respondCheckpoint('reject')">❌ 需要修改</button>
+      <button class="btn btn-sm" onclick="showRedirectInput()">🔄 提供新方向</button>
+    </div>
+    <div id="cpRedirectInput" style="display:none;margin-top:8px">
+      <div class="form-row">
+        <input type="text" id="cpDirection" placeholder="输入新方向...">
+        <button class="btn btn-sm btn-primary" onclick="submitRedirect()">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建任务 -->
+  <div class="panel">
+    <h2>✦ 创建任务</h2>
+    <div class="form-row">
+      <input type="text" id="taskTitle" placeholder="任务标题" autofocus>
+      <input type="text" id="taskFiles" placeholder="关联文件（逗号分隔）">
+      <select id="taskMode"><option value="code">💻 编码</option><option value="architect">🏗 架构</option><option value="ask">💬 问答</option><option value="debug">🐛 调试</option></select>
+      <select id="taskPriority"><option value="medium">中</option><option value="high">高</option><option value="low">低</option><option value="critical">紧急</option></select>
+      <button class="btn btn-primary" onclick="createTask()">创建</button>
+    </div>
+    <div class="tags-row">
+      <span class="tag" onclick="toggleTag(this)">api</span>
+      <span class="tag" onclick="toggleTag(this)">frontend</span>
+      <span class="tag" onclick="toggleTag(this)">backend</span>
+      <span class="tag" onclick="toggleTag(this)">bug</span>
+      <span class="tag" onclick="toggleTag(this)">test</span>
+      <span class="tag" onclick="toggleTag(this)">refactor</span>
+    </div>
+    <div id="skillMatchResult" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px"></div>
+  </div>
+
+  <!-- 版本历史 -->
+  <div id="versionPanel">
+    <h3>📜 版本历史 <span id="versionTaskTitle" style="font-weight:400;color:var(--muted)"></span></h3>
+    <div id="versionLog"></div>
+  </div>
+
+  <!-- 执行追踪面板 — 多标签 -->
+  <div id="tracePanel">
+    <div id="traceTabs"></div>
+    <div id="traceContent"></div>
+    <div class="trace-chat-area" id="traceChatArea">
+      <input type="text" id="traceChatInput" placeholder="输入提示词，与当前任务交互..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()">发送</button>
+    </div>
+    <div class="trace-chat-hint">Enter 发送 · 消息将注入到当前执行中的任务</div>
+  </div>
+
+  <!-- 过滤栏 -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-sm active-filter" data-filter="all" onclick="switchFilter('all')" style="background:var(--accent);color:#fff">全部</button>
+    <button class="btn btn-sm" data-filter="in-progress" onclick="switchFilter('in-progress')">进行中</button>
+    <button class="btn btn-sm" data-filter="ready" onclick="switchFilter('ready')">可执行</button>
+    <button class="btn btn-sm" data-filter="blocked" onclick="switchFilter('blocked')">阻塞</button>
+    <button class="btn btn-sm" data-filter="pending" onclick="switchFilter('pending')">待处理</button>
+    <button class="btn btn-sm" data-filter="done" onclick="switchFilter('done')">已完成</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-sm btn-success" onclick="executeReady()">▶ 执行可执行</button>
+    <button class="btn btn-sm" onclick="resetTasks()">⟲ 重置</button>
+  </div>
+
+  <!-- 任务列表 -->
+  <div id="taskList"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+
+  <!-- 技能区 -->
+  <div class="panel">
+    <h2>📚 可用技能 <span style="font-size:12px;color:var(--muted);font-weight:400">(双击任务卡片可自动学习)</span></h2>
+    <div id="skillList"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+  </div>
+
+  <!-- 保护层 -->
+  <div class="panel" style="margin-top:24px">
+    <h2>📡 模型 <span id="currentModelBadge" style="font-size:12px;font-weight:400;color:var(--muted)">...</span></h2>
+    <div id="modelList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:12px">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <input type="text" id="apiKeyProvider" readonly style="width:100px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:13px" placeholder="click model">
+      <input type="password" id="apiKeyInput" placeholder="paste API key..." style="flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+      <button class="btn btn-sm btn-primary" onclick="setApiKey()">Save Key</button>
+      <span id="keyStatus" style="font-size:12px;color:var(--green);display:none">OK</span>
+    </div>
+  </div>
+<div class="panel">
+    <h2>🛡️ 保护层 <span id="shieldStatus" style="font-size:13px;color:var(--muted);font-weight:400">加载中...</span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px">
+      <fieldset style="border:1px solid var(--border);border-radius:6px;padding:8px 12px">
+        <legend style="font-size:11px;color:var(--accent);font-weight:600">Agent 循环</legend>
+        <div class="limit-row"><label>最大迭代</label><input type="number" id="lim-maxIterations" min="10" max="500"></div>
+        <div class="limit-row"><label>最大重启</label><input type="number" id="lim-maxContextRestarts" min="1" max="20"></div>
+        <div class="limit-row"><label>上下文阈值 %</label><input type="number" id="lim-contextThreshold" min="30" max="90"></div>
+        <div class="limit-row"><label>收尾提醒 %</label><input type="number" id="lim-wrapUpAtContext" min="20" max="80"></div>
+      </fieldset>
+      <fieldset style="border:1px solid var(--border);border-radius:6px;padding:8px 12px">
+        <legend style="font-size:11px;color:var(--yellow);font-weight:600">循环检测</legend>
+        <div class="limit-row"><label>历史窗口</label><input type="number" id="lim-historySize" min="20" max="500"></div>
+        <div class="limit-row"><label>警告阈值</label><input type="number" id="lim-warningThreshold" min="5" max="200"></div>
+        <div class="limit-row"><label>严重阈值</label><input type="number" id="lim-criticalThreshold" min="10" max="300"></div>
+      </fieldset>
+      <fieldset style="border:1px solid var(--border);border-radius:6px;padding:8px 12px">
+        <legend style="font-size:11px;color:var(--red);font-weight:600">失败阈值</legend>
+        <div class="limit-row"><label>最大工具调用</label><input type="number" id="lim-maxToolCallsPerTask" min="10" max="500"></div>
+        <div class="limit-row"><label>最大重试</label><input type="number" id="lim-maxRetriesPerAction" min="1" max="20"></div>
+        <div class="limit-row"><label>连续失败</label><input type="number" id="lim-maxConsecutiveFailures" min="1" max="20"></div>
+        <div class="limit-row"><label>超时(分钟)</label><input type="number" id="lim-maxDurationMs" min="5" max="120"></div>
+      </fieldset>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <button class="btn btn-sm btn-primary" onclick="saveShieldConfig()">💾 保存配置</button>
+      <button class="btn btn-sm" onclick="resetShieldDefaults()">↺ 默认</button>
+      <span id="shieldSaveStatus" style="font-size:12px;color:var(--green);display:none">✅ 已保存</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 主题切换 =====
+const THEME_KEY = 'orion-theme'
+function applyTheme(name) {
+  document.documentElement.setAttribute('data-theme', name)
+  document.getElementById('themeSelector').value = name
+  localStorage.setItem(THEME_KEY, name)
+}
+function switchTheme(name) { applyTheme(name) }
+// 初始化：从 localStorage 恢复主题
+const savedTheme = localStorage.getItem(THEME_KEY) || 'github-dark'
+applyTheme(savedTheme)
+
+const API = '/api'
+let currentFilter = 'all'
+let selectedTags = new Set()
+let currentCpId = null
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+function toast(msg, type = 'success') {
+  const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg
+  document.body.appendChild(el); setTimeout(() => el.remove(), 3000)
+}
+
+// ===== 执行追踪 — 多标签 =====
+const traceStore = {} // { taskId: { title, entries: [{icon,msg,isError,time}], streamEl: null, paneEl: null } }
+let activeTraceTab = null
+
+function ensureTracePane(taskId, title) {
+  if (!traceStore[taskId]) {
+    // create pane in #traceContent
+    const pane = document.createElement('div')
+    pane.className = 'trace-pane'
+    pane.id = 'trace-pane-' + taskId
+    document.getElementById('traceContent').appendChild(pane)
+    traceStore[taskId] = { title: title || taskId, entries: [], streamEl: null, paneEl: pane, status: 'running' }
+  }
+  if (title && !traceStore[taskId].title.includes(title)) {
+    traceStore[taskId].title = title
+  }
+  return traceStore[taskId]
+}
+
+function addTraceTab(taskId, title) {
+  ensureTracePane(taskId, title)
+  // check if tab already exists
+  const existing = document.querySelector('.trace-tab[data-taskid="' + taskId + '"]')
+  if (existing) return
+  const tabs = document.getElementById('traceTabs')
+  const tab = document.createElement('div')
+  tab.className = 'trace-tab'
+  tab.setAttribute('data-taskid', taskId)
+  tab.innerHTML = '<span class="tab-status" id="tab-status-' + taskId + '">●</span>'
+    + '<div class="tab-info-group">'
+    + '<span class="tab-title">' + esc(title || taskId) + '</span>'
+    + '<span class="tab-stats" id="tab-stats-' + taskId + '"></span>'
+    + '</div>'
+    + '<span class="tab-ctrl-group">'
+    + '<button class="tab-ctrl-btn pause" title="暂停" data-taskid="' + taskId + '" data-action="pause">⏸</button>'
+    + '<button class="tab-ctrl-btn stop" title="终止" data-taskid="' + taskId + '" data-action="stop">⏹</button>'
+    + '</span>'
+    + '<span class="tab-close" data-taskid="' + taskId + '">&times;</span>'
+  tab.addEventListener('click', function(e) {
+    if (e.target.classList.contains('tab-close')) return
+    switchTraceTab(taskId)
+  })
+  tab.querySelector('.tab-close').addEventListener('click', function(e) {
+    e.stopPropagation()
+    closeTraceTab(taskId)
+  })
+  // 控制按钮事件
+  tab.querySelectorAll('.tab-ctrl-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation()
+      const tid = this.getAttribute('data-taskid')
+      const action = this.getAttribute('data-action')
+      if (action === 'pause') pauseTask(tid)
+      else if (action === 'stop') stopTask(tid)
+    })
+  })
+  tabs.appendChild(tab)
+  document.getElementById('tracePanel').style.display = 'block'
+  switchTraceTab(taskId)
+  updateTabStatus(taskId, 'running')
+}
+
+function selectTaskCard(taskId) {
+  // 取消所有卡片选中
+  document.querySelectorAll('.task-card.selected').forEach(c => c.classList.remove('selected'))
+  // 选中对应卡片
+  const card = document.querySelector('.task-card-id')
+  // 遍历所有卡片找到匹配的
+  document.querySelectorAll('.task-card').forEach(c => {
+    const idEl = c.querySelector('.task-card-id')
+    if (idEl && (idEl.textContent === taskId || idEl.textContent.startsWith(taskId))) {
+      c.classList.add('selected')
+      c.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
+  // 如果追踪标签存在，切换过去
+  if (traceStore[taskId]) {
+    switchTraceTab(taskId)
+  }
+}
+
+function switchTraceTab(taskId) {
+  const store = traceStore[taskId]
+  if (!store) return
+  // deactivate all tabs and panes
+  document.querySelectorAll('.trace-tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('.trace-pane').forEach(p => p.classList.remove('active'))
+  // activate current
+  const tab = document.querySelector('.trace-tab[data-taskid="' + taskId + '"]')
+  if (tab) tab.classList.add('active')
+  if (store.paneEl) store.paneEl.classList.add('active')
+  activeTraceTab = taskId
+  // 双向联动：高亮对应的任务卡片
+  document.querySelectorAll('.task-card.selected').forEach(c => c.classList.remove('selected'))
+  document.querySelectorAll('.task-card').forEach(c => {
+    const idEl = c.querySelector('.task-card-id')
+    if (idEl && (idEl.textContent === taskId || idEl.textContent.startsWith(taskId))) {
+      c.classList.add('selected')
+      c.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
+  // 聚焦聊天输入框
+  document.getElementById('traceChatInput')?.focus()
+}
+
+function closeTraceTab(taskId) {
+  const store = traceStore[taskId]
+  if (!store) return
+  // remove tab
+  const tab = document.querySelector('.trace-tab[data-taskid="' + taskId + '"]')
+  if (tab) tab.remove()
+  // remove pane
+  if (store.paneEl) store.paneEl.remove()
+  delete traceStore[taskId]
+  // 取消对应卡片选中
+  document.querySelectorAll('.task-card').forEach(c => {
+    const idEl = c.querySelector('.task-card-id')
+    if (idEl && (idEl.textContent === taskId || idEl.textContent.startsWith(taskId))) {
+      c.classList.remove('selected')
+    }
+  })
+  // switch to remaining tab or hide panel
+  const remaining = Object.keys(traceStore)
+  if (remaining.length > 0) {
+    switchTraceTab(remaining[remaining.length - 1])
+  } else {
+    activeTraceTab = null
+    document.getElementById('tracePanel').style.display = 'none'
+  }
+}
+
+function updateTabStatus(taskId, status) {
+  const store = traceStore[taskId]
+  if (!store) return
+  store.status = status
+  const tab = document.querySelector('.trace-tab[data-taskid="' + taskId + '"]')
+  if (!tab) return
+  const statusEl = tab.querySelector('.tab-status')
+  if (!statusEl) return
+  const icons = { running: '🟡', completed: '🟢', error: '🔴', cancelled: '⚪' }
+  statusEl.textContent = icons[status] || '●'
+  // 完成后隐藏控制按钮
+  const ctrl = tab.querySelector('.tab-ctrl-group')
+  if (ctrl) ctrl.style.display = (status === 'completed' || status === 'error' || status === 'cancelled') ? 'none' : ''
+}
+
+function updateTabStats(taskId, stats) {
+  var store = traceStore[taskId]
+  if (!store) return
+  store.stats = stats
+  var el = document.getElementById('tab-stats-' + taskId)
+  if (!el) return
+  var parts = []
+  // Step progress: current step / max iterations
+  if (stats.stepIndex !== undefined) {
+    parts.push('<span class="stat-item">▸' + (stats.stepIndex + 1) + '/25</span>')
+  }
+  // Context usage bar + percentage
+  if (stats.contextPct !== undefined && stats.contextPct > 0) {
+    var pct = Math.round(stats.contextPct * 100)
+    var color = pct > 60 ? 'var(--orange)' : pct > 45 ? 'var(--yellow)' : 'var(--accent)'
+    parts.push('<span class="stat-item">🧠<span class="stat-bar"><span class="stat-bar-fill" style="width:' + pct + '%;background:' + color + '"></span></span>' + pct + '%</span>')
+  }
+  // Token usage
+  var totalTokens = stats.totalInputTokens + stats.totalOutputTokens + (stats.cumulativeInputTokens || 0)
+  if (totalTokens > 0) {
+    parts.push('<span class="stat-item">🔤' + formatTokenCount(totalTokens) + '</span>')
+  }
+  el.innerHTML = parts.join('')
+}
+
+function formatTokenCount(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+  return String(n)
+}
+
+function appendTraceToTask(taskId, icon, msg, isError) {
+  const store = ensureTracePane(taskId, '')
+  const now = new Date()
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0')
+  const entry = document.createElement('div')
+  entry.className = 'trace-entry'
+  entry.innerHTML = '<span class="trace-time">' + time + '</span><span class="trace-icon">' + icon + '</span><span class="trace-msg' + (isError ? ' error' : '') + '">' + esc(msg) + '</span>'
+  store.paneEl.appendChild(entry)
+  store.paneEl.scrollTop = store.paneEl.scrollHeight
+  store.entries.push({ icon, msg, isError, time })
+  store.streamEl = null
+  return entry
+}
+
+function appendStreamToTask(taskId, delta) {
+  const store = ensureTracePane(taskId, '')
+  if (!store.streamEl || !store.streamEl.parentNode) {
+    store.streamEl = appendTraceToTask(taskId, '💬', delta)
+    const msgEl = store.streamEl.querySelector('.trace-msg')
+    if (msgEl) msgEl.classList.add('stream')
+  } else {
+    const msgEl = store.streamEl.querySelector('.trace-msg')
+    if (msgEl) {
+      msgEl.textContent += delta
+      store.paneEl.scrollTop = store.paneEl.scrollHeight
+    }
+  }
+}
+
+function appendTraceHTMLToTask(taskId, icon, html) {
+  const store = ensureTracePane(taskId, '')
+  const now = new Date()
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0')
+  const entry = document.createElement('div')
+  entry.className = 'trace-entry'
+  entry.innerHTML = '<span class="trace-time">' + time + '</span><span class="trace-icon">' + icon + '</span><span class="trace-msg">' + html + '</span>'
+  store.paneEl.appendChild(entry)
+  store.paneEl.scrollTop = store.paneEl.scrollHeight
+  store.streamEl = null
+  return entry
+}
+
+function clearTrace() {
+  // clear current active tab
+  if (activeTraceTab) {
+    closeTraceTab(activeTraceTab)
+  }
+}
+
+async function rollbackTask(taskId) {
+  if (!confirm('确定要回滚此任务所做的所有文件更改吗？')) return
+  try {
+    const result = await api('/tasks/' + taskId + '/rollback', { method: 'POST' })
+    if (result.rolledBack) {
+      toast('↩ 已回滚 ' + result.restored.length + ' 个文件', 'success')
+    } else {
+      toast(result.message || '回滚失败', 'error')
+    }
+  } catch (e) {
+    toast('回滚失败: ' + e.message, 'error')
+  }
+}
+
+function toggleTag(el) {
+  el.classList.toggle('active')
+  const tag = el.textContent
+  selectedTags.has(tag) ? selectedTags.delete(tag) : selectedTags.add(tag)
+}
+
+// ===== 断点系统 =====
+function showCheckpointBar(cp) {
+  currentCpId = cp.id
+  document.getElementById('checkpointBar').style.display = 'block'
+  document.getElementById('cpTitle').textContent = cp.taskTitle || '等待确认'
+  document.getElementById('cpMessage').textContent = cp.context?.message || ''
+}
+function hideCheckpointBar() {
+  document.getElementById('checkpointBar').style.display = 'none'
+  currentCpId = null
+}
+function showRedirectInput() {
+  document.getElementById('cpRedirectInput').style.display = 'block'
+}
+async function respondCheckpoint(action) {
+  if (!currentCpId) return
+  try {
+    await api('/checkpoints/' + currentCpId, { method: 'POST', body: JSON.stringify({ action }) })
+    toast(action === 'approve' ? '✅ 已批准，任务继续执行' : '❌ 已拒绝，任务将重试')
+    hideCheckpointBar()
+    loadAll()
+  } catch (e) { toast('操作失败', 'error') }
+}
+async function submitRedirect() {
+  const direction = document.getElementById('cpDirection').value.trim()
+  if (!direction) return
+  try {
+    await api('/checkpoints/' + currentCpId, { method: 'POST', body: JSON.stringify({ action: 'redirect', direction }) })
+    toast('🔄 已重定向: ' + direction)
+    hideCheckpointBar(); loadAll()
+  } catch (e) { toast('操作失败', 'error') }
+}
+
+// ===== SSE 实时连接 =====
+const evtSource = new EventSource('/events')
+evtSource.onmessage = (e) => {
+  try {
+    const data = JSON.parse(e.data)
+    if (data.type === 'checkpoint') showCheckpointBar(data.checkpoint)
+    if (data.type === 'checkpoint-update' && data.checkpoint.status !== 'pending') hideCheckpointBar()
+    if (data.type === 'task-update' || data.type === 'task-created') { loadTasks(); loadStats() }
+    if (data.type === 'task-paused') { updateTabStatus(data.taskId, 'cancelled'); appendTraceToTask(data.taskId, '⏸', '任务已暂停'); loadTasks(); loadStats() }
+    if (data.type === 'task-resumed') { addTraceTab(data.taskId); updateTabStatus(data.taskId, 'running'); appendTraceToTask(data.taskId, '▶️', '任务已恢复'); loadTasks(); loadStats() }
+    if (data.type === 'task-cancelled') { updateTabStatus(data.taskId, 'cancelled'); appendTraceToTask(data.taskId, '⏹', '任务已取消'); loadTasks(); loadStats() }
+    if (data.type === 'skill-learned') toast('📚 已自动学习新技能: ' + data.skillPath, 'info')
+    if (data.type === 'automation-change') updateAutoToggle(data.autoMode)
+    if (data.type === 'execution-started') { addTraceTab(data.taskId, data.taskTitle || data.taskId); appendTraceToTask(data.taskId, '▶️', '开始执行: ' + (data.taskTitle || data.taskId)); if (data.outputDir) { appendTraceToTask(data.taskId, '📁', '产出目录: ' + data.outputDir + '/') }; toast('▶ 开始执行', 'info') }
+    if (data.type === 'execution-progress') { appendTraceToTask(data.taskId, '🔧', data.message) }
+    if (data.type === 'execution-stream') { appendStreamToTask(data.taskId, data.delta) }
+    if (data.type === 'context-update') { updateTabStats(data.taskId, data.stats) }
+    if (data.type === 'execution-complete') { const tok = data.tokenUsage; if (tok) { updateTabStats(data.taskId, { stepIndex: 24, contextPct: 1, totalInputTokens: tok.inputTokens, totalOutputTokens: tok.outputTokens, cumulativeInputTokens: 0 }) }; const tokStr = tok ? ' | ' + (tok.inputTokens + tok.outputTokens).toLocaleString() + ' tokens (入' + tok.inputTokens.toLocaleString() + '+出' + tok.outputTokens.toLocaleString() + ')' : ''; const rb = data.hasRollback ? ' <button onclick="rollbackTask(\'' + data.taskId + '\')" style="padding:2px 8px;font-size:12px;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer">↩ 回滚</button>' : ''; appendTraceHTMLToTask(data.taskId, '✅', '完成 (' + (data.durationMs/1000).toFixed(1) + 's)' + tokStr + rb); updateTabStatus(data.taskId, 'completed'); toast('✅ 完成', 'success'); loadTasks(); loadStats() }
+    if (data.type === 'execution-error') { const tok = data.tokenUsage; if (tok) { updateTabStats(data.taskId, { stepIndex: 0, contextPct: 0, totalInputTokens: tok.inputTokens, totalOutputTokens: tok.outputTokens, cumulativeInputTokens: 0 }) }; const tokStr = tok ? ' (' + (tok.inputTokens + tok.outputTokens).toLocaleString() + ' tokens)' : ''; appendTraceToTask(data.taskId, '❌', (data.error || data.taskId) + tokStr, true); updateTabStatus(data.taskId, 'error'); toast('❌ 失败', 'error'); loadTasks(); loadStats() }
+    if (data.type === 'output-actions') { if (data.results && data.results.length > 0) { toast('🎬 自动执行 ' + data.results.length + ' 个产出物', 'info'); data.results.forEach(function(r) { appendTraceToTask(data.taskId, '🎬', r) }) } }
+    if (data.type === 'rollback-complete') { const r = data.result; toast('↩ 已回滚: ' + (r.restored?.length || 0) + ' 个文件', 'info'); appendTraceToTask(data.taskId, '↩', '已回滚 ' + r.restored.length + ' 个文件'); }
+    if (data.type === 'chat-message') { appendTraceToTask(data.taskId, '💬', 'Agent: ' + data.message) }
+  } catch {}
+}
+
+// ===== 任务 CRUD =====
+async function createTask() {
+  const title = document.getElementById('taskTitle').value.trim()
+  if (!title) return toast('请输入标题', 'error')
+  try {
+    const data = { title, priority: document.getElementById('taskPriority').value, mode: document.getElementById('taskMode').value, tags: Array.from(selectedTags) }
+    const result = await api('/tasks', { method: 'POST', body: JSON.stringify(data) })
+    document.getElementById('taskTitle').value = ''
+    toast('✅ 已创建: ' + result.task.id)
+    if (result.matchedSkills?.length > 0) {
+      const d = document.getElementById('skillMatchResult'); d.style.display = 'block'
+      d.innerHTML = '🎯 匹配技能: ' + result.matchedSkills.map(s => s.skill.name + '(' + (s.score * 100).toFixed(0) + '%)').join(' · ')
+      if (result.subTasks?.length) {
+        d.innerHTML += '<br>📋 已自动展开 ' + result.subTasks.length + ' 个子任务: ' + result.subTasks.map(t => t.id).join(', ')
+      }
+    }
+    loadAll()
+  } catch (e) { toast('创建失败', 'error') }
+}
+
+async function updateTaskStatus(id, status) {
+  try { await api('/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ status }) }); toast('✅ ' + status); loadAll() }
+  catch (e) { toast('更新失败', 'error') }
+}
+
+async function deleteTask(id) {
+  if (!confirm('删除任务 ' + id + '？')) return
+  try { await api('/tasks/' + id, { method: 'DELETE' }); toast('已删除'); loadAll() }
+  catch (e) { toast('删除失败', 'error') }
+}
+
+async function expandTask(id) {
+  toast('🔀 AI 正在分解任务...', 'info')
+  try {
+    const r = await api('/tasks/' + id + '/expand', { method: 'POST' })
+    toast('✅ 已生成 ' + r.subtasks.length + ' 个子任务')
+    loadAll()
+  } catch (e) { toast('展开失败: ' + e.message, 'error') }
+}
+
+async function getNextTask() {
+  try {
+    const r = await api('/tasks/next')
+    if (r.task) {
+      toast('▶ 下一个: ' + (r.task.displayId || r.task.id) + ' - ' + r.task.title, 'success')
+      // Scroll to the task
+      setTimeout(() => {
+        const cards = document.querySelectorAll('.task-card-id')
+        for (const c of cards) {
+          if (c.textContent === (r.task.displayId || r.task.id)) {
+            c.closest('.task-card').scrollIntoView({ behavior: 'smooth', block: 'center' })
+            c.closest('.task-card').style.boxShadow = '0 0 12px var(--accent)'
+            setTimeout(() => { c.closest('.task-card').style.boxShadow = '' }, 3000)
+            break
+          }
+        }
+      }, 300)
+    } else {
+      toast('🎉 所有任务已完成!', 'success')
+    }
+  } catch (e) { toast('获取失败', 'error') }
+}
+
+async function executeTask(id) {
+  try {
+    const r = await api('/tasks/' + id + '/execute', { method: 'POST' })
+    if (r.status === 'already-running') { toast('任务已在执行中', 'info'); return }
+    if (r.status === 'queued') { toast('排队中: ' + r.reason, 'info'); return }
+    toast('▶ 开始执行 ' + id)
+  } catch (e) { toast('执行失败: ' + e.message, 'error') }
+}
+
+async function pauseTask(id) {
+  try {
+    const r = await api('/tasks/' + id + '/pause', { method: 'POST' })
+    toast('⏸ 已暂停 ' + id); loadAll()
+  } catch (e) { toast('暂停失败', 'error') }
+}
+
+async function resumeTask(id) {
+  try {
+    const r = await api('/tasks/' + id + '/resume', { method: 'POST' })
+    toast('▶ 已恢复 ' + id); loadAll()
+  } catch (e) { toast('恢复失败', 'error') }
+}
+
+async function stopTask(id) {
+  if (!confirm('确定要停止任务 ' + id + '？')) return
+  try {
+    const r = await api('/tasks/' + id + '/stop', { method: 'POST' })
+    toast('⏹ 已停止 ' + id); loadAll()
+  } catch (e) { toast('停止失败', 'error') }
+}
+
+async function executeReady() {
+  try {
+    const r = await api('/tasks/execute-ready', { method: 'POST' })
+    if (r.executed === 0) return toast(r.message || '没有可执行任务', 'info')
+    toast('▶ 开始执行 ' + r.executed + ' 个任务')
+  } catch (e) { toast('执行失败', 'error') }
+}
+
+async function resetTasks() {
+  try { const r = await api('/tasks/reset', { method: 'POST' }); toast('已重置 ' + r.resetCount + ' 个'); loadAll() }
+  catch (e) { toast('重置失败', 'error') }
+}
+
+function switchFilter(f) {
+  currentFilter = f
+  document.querySelectorAll('[data-filter]').forEach(el => {
+    el.style.background = el.dataset.filter === f ? 'var(--accent)' : ''; el.style.color = el.dataset.filter === f ? '#fff' : ''
+    el.style.borderColor = el.dataset.filter === f ? 'var(--accent)' : ''
+  })
+  loadTasks()
+}
+
+// ===== 版本历史 =====
+async function showVersions(taskId) {
+  try {
+    const versions = await api('/tasks/' + taskId + '/versions')
+    const task = await api('/tasks/' + taskId)
+    const panel = document.getElementById('versionPanel')
+    const log = document.getElementById('versionLog')
+    document.getElementById('versionTaskTitle').textContent = task ? ' — ' + task.title : ''
+    if (!versions || !versions.length) {
+      log.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px">暂无版本记录（任务尚未执行或未产生文件变更）</div>'
+    } else {
+      log.innerHTML = versions.slice().reverse().map(function(v, i) {
+        var d = new Date(v.timestamp)
+        var ts = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' +
+          String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+        return '<div class="version-item">' +
+          '<span class="version-time">' + ts + '<br><span style="font-size:10px;color:var(--muted)">#' + (versions.length - i) + '</span></span>' +
+          '<div class="version-info">' +
+          '<div class="version-desc">' + esc(v.description) + '</div>' +
+          '<div class="version-files">' + (v.filesChanged || []).map(function(f) { return '<span class="version-file">' + esc(f) + '</span>' }).join('') + '</div>' +
+          '</div>' +
+          (v.commitHash ? '<span class="version-hash" title="点击复制 commit hash" onclick="copyHash(\'' + v.commitHash + '\')">' + v.commitHash.slice(0, 7) + '</span>' : '') +
+          '</div>'
+      }).join('')
+    }
+    panel.style.display = 'block'
+    panel.scrollIntoView({ behavior: 'smooth' })
+  } catch(e) { toast('加载版本历史失败: ' + e.message, 'error') }
+}
+
+function copyHash(hash) {
+  navigator.clipboard?.writeText(hash)
+  toast('已复制: ' + hash.slice(0, 7), 'info')
+}
+
+// ===== 技能自动学习 =====
+async function learnFromTask(taskId) {
+  try {
+    const task = await api('/tasks/' + taskId)
+    const name = prompt('技能名称:', task.title)
+    if (!name) return
+    const r = await api('/skills/learn', { method: 'POST', body: JSON.stringify({ taskId, skillName: name }) })
+    toast('📚 已学习为新技能: ' + r.name, 'info')
+    loadSkills()
+  } catch (e) { toast('学习失败', 'error') }
+}
+
+// ===== 渲染 =====
+function esc(s) { if (!s) return ''; return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function renderTaskCard(t, depth) {
+  depth = depth || 0
+  const indent = depth * 24
+  const sl = {'in-progress':'进行中','ready':'可执行','pending':'待处理','done':'完成','blocked':'阻塞','review':'审查','cancelled':'取消','deferred':'推迟'}
+  const ml = {'code':'💻 编码','architect':'🏗 架构','ask':'💬 问答','debug':'🐛 调试'}
+  const f = t.scope?.files?.filter(Boolean) || []; const tg = t.scope?.tags || []
+  const hasSubtasks = t.subtaskIds && t.subtaskIds.length > 0
+  const progress = t._progress || { done: 0, total: 0 }
+  const progressBar = hasSubtasks && progress.total > 0
+    ? '<div class="progress-bar" style="margin:4px 0;height:4px;background:var(--surface2);border-radius:2px"><div style="height:100%;width:' + Math.round(progress.done / progress.total * 100) + '%;background:var(--green);border-radius:2px"></div></div>' +
+      '<span style="font-size:11px;color:var(--muted)">子任务: ' + progress.done + '/' + progress.total + ' 完成</span>'
+    : ''
+
+  // 标题行内的紧凑标签
+  const headerBadges = '' +
+    ' <span class="badge badge-' + t.status + '" style="margin-left:8px;font-size:10px">' + (sl[t.status] || t.status) + '</span>' +
+    (t.mode && t.mode !== 'code' ? ' <span class="badge" style="background:var(--surface2);color:var(--accent);font-size:10px">' + (ml[t.mode] || t.mode) + '</span>' : '') +
+    (t.priority === 'high' ? ' <span class="badge" style="background:rgba(248,81,73,.15);color:var(--red);font-size:10px">高</span>' : '') +
+    (t.priority === 'critical' ? ' <span class="badge" style="background:rgba(248,81,73,.3);color:var(--red);font-size:10px">紧急</span>' : '')
+
+  return '<div class="task-card" onclick="selectTaskCard(\'' + t.id + '\')" ondblclick="learnFromTask(\'' + t.id + '\')" style="margin-left:' + indent + 'px' + (depth > 0 ? ';border-left:3px solid var(--accent)' : '') + '">' +
+    '<div class="task-card-header"><span class="task-card-title">' + (depth > 0 ? '└ ' : '') + esc(t.title) + '</span>' + headerBadges + '<span class="task-card-id" style="margin-left:auto">' + (t.displayId || t.id) + '</span></div>' +
+    '<div class="task-card-desc">' + esc((t.description || '').slice(0, 100)) + '</div>' +
+    '<div class="task-card-meta">' +
+    (t.dependencies?.length ? '<span class="badge" style="background:var(--surface2);color:var(--muted)">依赖 ' + t.dependencies.length + '</span>' : '') +
+    (t.attempts?.length ? '<span class="badge" style="background:var(--surface2);color:var(--muted)">尝试 ' + t.attempts.length + '</span>' : '') +
+    (hasSubtasks ? '<span class="badge" style="background:var(--surface2);color:var(--accent)">' + progress.done + '/' + progress.total + ' 子任务</span>' : '') +
+    (f.length ? '<span class="badge" style="background:var(--surface2);color:var(--muted)">📎 ' + f.length + '</span>' : '') +
+    '</div>' +
+    progressBar +
+    (t.details ? '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;max-height:60px;overflow:hidden">📝 ' + esc(t.details.slice(-300)) + '</div>' : '') +
+    (tg.length ? '<div style="display:flex;gap:4px;margin-bottom:8px">' + tg.map(t => '<span class="skill-tag">#' + t + '</span>').join('') + '</div>' : '') +
+
+    (t.outputDir ? '<div style="font-size:11px;color:var(--accent);margin-bottom:8px">📁 ' + esc(t.outputDir) + '/</div>' : '') +
+    (t.blockedReason ? '<div style="font-size:12px;color:var(--red);margin-bottom:8px">🚫 ' + esc(t.blockedReason) + '</div>' : '') +
+    (t.testStrategy ? '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">🧪 ' + esc(t.testStrategy) + '</div>' : '') +
+    '<div class="task-card-footer">' +
+    ((t.status === 'pending' || t.status === 'ready') ? '<button class="btn btn-sm btn-success" onclick="event.stopPropagation();executeTask(\'' + t.id + '\')">▶ 执行</button>' : '') +
+    (t.status === 'in-progress' ? '<button class="btn btn-sm" onclick="event.stopPropagation();pauseTask(\'' + t.id + '\')">⏸</button>' : '') +
+    (t.status === 'in-progress' ? '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();stopTask(\'' + t.id + '\')">⏹</button>' : '') +
+    (t.status === 'in-progress' ? '<button class="btn btn-sm btn-success" onclick="event.stopPropagation();updateTaskStatus(\'' + t.id + '\',\'done\')">完成</button>' : '') +
+    (t.status === 'in-progress' ? '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();updateTaskStatus(\'' + t.id + '\',\'blocked\')">阻塞</button>' : '') +
+    (t.status === 'blocked' ? '<button class="btn btn-sm btn-success" onclick="event.stopPropagation();updateTaskStatus(\'' + t.id + '\',\'ready\')">恢复</button>' : '') +
+    (t.status === 'paused' ? '<button class="btn btn-sm btn-success" onclick="event.stopPropagation();resumeTask(\'' + t.id + '\')">▶ 继续</button>' : '') +
+    (t.status === 'done' ? '<button class="btn btn-sm" onclick="event.stopPropagation();updateTaskStatus(\'' + t.id + '\',\'pending\')">重开</button>' : '') +
+    (t.status !== 'done' ? '<button class="btn btn-sm" style="border-color:#a855f7;color:#a855f7" onclick="event.stopPropagation();expandTask(\'' + t.id + '\')" title="AI 展开为子任务">🔀 展开</button>' : '') +
+    '<button class="btn btn-sm btn-warn" onclick="event.stopPropagation();learnFromTask(\'' + t.id + '\')" title="从完成记录学习技能">📚 学</button>' +
+    '<button class="btn btn-sm" style="border-color:var(--purple);color:var(--purple)" onclick="event.stopPropagation();showVersions(\'' + t.id + '\')" title="查看版本历史">📜 版本</button>' +
+    '<span style="flex:1"></span>' +
+    '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteTask(\'' + t.id + '\')">删除</button>' +
+    '</div></div>'
+}
+
+function renderTaskTree(tree) {
+  function renderWithChildren(task, depth) {
+    let html = renderTaskCard(task, depth)
+    const subs = task.subtasks || []
+    for (const s of subs) {
+      html += renderWithChildren(s, depth + 1)
+    }
+    return html
+  }
+  let html = ''
+  for (const r of tree) {
+    html += renderWithChildren(r, 0)
+  }
+  return html
+}
+
+async function loadTasks() {
+  try {
+    const tree = await api('/tasks/tree')
+    // Add progress info to each task
+    function attachProgress(ts) {
+      for (const t of ts) {
+        t._progress = t.progress || { done: 0, total: 0 }
+        if (t.subtasks) attachProgress(t.subtasks)
+      }
+    }
+    attachProgress(tree)
+
+    // Filter for status tabs
+    const filtered = currentFilter === 'all' ? tree : tree.filter(t => {
+      if (t.status === currentFilter) return true
+      if (t.subtasks && t.subtasks.some(s => s.status === currentFilter)) return true
+      return false
+    })
+
+    const el = document.getElementById('taskList')
+    el.innerHTML = filtered.length
+      ? '<div class="task-grid">' + renderTaskTree(filtered) + '</div>'
+      : '<div class="empty"><h3>✦ 还没有任务</h3><p>创建第一个任务</p></div>'
+  } catch { document.getElementById('taskList').innerHTML = '<div class="empty"><h3>❌ 加载失败</h3></div>' }
+}
+
+async function loadSkills() {
+  try {
+    const s = await api('/skills')
+    document.getElementById('skillList').innerHTML = s.length
+      ? '<div class="skills-panel">' + s.map(x =>
+        '<div class="skill-card"><div class="skill-name">' + esc(x.name) + '</div><div class="skill-desc">' + esc(x.description) +
+        '</div><div class="skill-tags">' + (x.tags || []).map(t => '<span class="skill-tag">' + t + '</span>').join('') + '</div></div>'
+      ).join('') + '</div>'
+      : '<p style="color:var(--muted)">暂无技能</p>'
+  } catch {}
+}
+
+async function loadStats() {
+  try {
+    const stats = await api('/tasks/stats')
+    document.getElementById('statDone').textContent = stats.done || 0
+    document.getElementById('statProgress').textContent = (stats['in-progress'] || 0) + (stats.ready || 0)
+    document.getElementById('statBlocked').textContent = stats.blocked || 0
+    const cps = await api('/checkpoints/stats')
+    document.getElementById('statCp').textContent = cps.pending || 0
+  } catch {}
+}
+
+
+let _selectedProvider = null
+
+function selectProviderForKey(id, name) {
+  _selectedProvider = id
+  document.getElementById('apiKeyProvider').value = name
+  document.getElementById('apiKeyInput').placeholder = '粘贴 ' + id + ' 的 Key...'
+  document.getElementById('keyStatus').style.display = 'none'
+}
+
+async function switchModel(id) {
+  await api('/models/switch', { method: 'POST', body: JSON.stringify({ id }) })
+  loadModels()
+}
+
+async function setApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim()
+  if (!key || !_selectedProvider) return
+  await api('/models/key', { method: 'POST', body: JSON.stringify({ id: _selectedProvider, apiKey: key }) })
+  document.getElementById('keyStatus').style.display = 'inline'
+  document.getElementById('apiKeyInput').value = ''
+  setTimeout(function() { document.getElementById('keyStatus').style.display = 'none' }, 2000)
+  loadModels()
+}
+
+async function loadModels() {
+  try {
+    var list = await api("/models")
+    var html = ""
+    var activeName = ""
+    for (var p of list) {
+      var isActive = p.active
+      var hasKey = p.config.apiKey && p.config.apiKey.length > 0
+      if (p.active) activeName = p.config.name
+      var cardStyle = "cursor:pointer" + (isActive ? ";border-color:var(--green);border-width:2px" : "")
+      html += "<div class=\"skill-card\" style=\"" + cardStyle + "\" data-pid=\"" + p.id + "\">"
+      html += "<div class=\"skill-name\">" + p.config.name + (isActive ? " ✅" : "") + "</div>"
+      html += "<div style=\"font-size:11px;color:var(--muted);font-weight:400\">" + p.config.model + "</div>"
+      html += "<div style=\"font-size:11px;color:var(--muted)\">" + (hasKey ? "🔑 已配置" : "⚪ 未配置") + "</div>"
+      html += "</div>"
+    }
+    document.getElementById("modelList").innerHTML = html
+    document.getElementById("currentModelBadge").textContent = activeName ? activeName : ""
+    document.querySelectorAll("#modelList .skill-card").forEach(function(el) {
+      el.addEventListener("click", function() {
+        var pid = this.getAttribute("data-pid")
+        var pname = this.querySelector(".skill-name").textContent.replace(" ✅", "")
+        selectProviderForKey(pid, pname)
+        switchModel(pid)
+        // 高亮选中的卡片
+        document.querySelectorAll("#modelList .skill-card").forEach(function(c) { c.style.borderColor = ""; c.style.borderWidth = "" })
+        this.style.borderColor = "var(--accent)"
+        this.style.borderWidth = "2px"
+      })
+    })
+  } catch(e) {
+    document.getElementById("modelList").innerHTML = "<p style=\"color:var(--red)\">error</p>"
+  }
+}
+
+async function loadShield() {
+  try {
+    const cfg = await api('/shield')
+    document.getElementById('shieldStatus').innerHTML = (cfg.enabled ? '✅ 运行中' : '❌ 禁用')
+    // 填充输入框
+    const al = cfg.agentLimits || {}
+    setVal('lim-maxIterations', al.maxIterations)
+    setVal('lim-maxContextRestarts', al.maxContextRestarts)
+    setVal('lim-contextThreshold', Math.round((al.contextThreshold || 0.6) * 100))
+    setVal('lim-wrapUpAtContext', Math.round((al.wrapUpAtContext || 0.45) * 100))
+    const ld = cfg.loopDetection || {}
+    setVal('lim-historySize', ld.historySize)
+    setVal('lim-warningThreshold', ld.warningThreshold)
+    setVal('lim-criticalThreshold', ld.criticalThreshold)
+    const ft = cfg.failureThreshold || {}
+    setVal('lim-maxToolCallsPerTask', ft.maxToolCallsPerTask)
+    setVal('lim-maxRetriesPerAction', ft.maxRetriesPerAction)
+    setVal('lim-maxConsecutiveFailures', ft.maxConsecutiveFailures)
+    setVal('lim-maxDurationMs', Math.round((ft.maxDurationMs || 1800000) / 60000))
+  } catch {}
+}
+function setVal(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val }
+
+async function saveShieldConfig() {
+  const cfg = {
+    agentLimits: {
+      maxIterations: parseInt(document.getElementById('lim-maxIterations').value) || 100,
+      maxContextRestarts: parseInt(document.getElementById('lim-maxContextRestarts').value) || 5,
+      contextThreshold: (parseInt(document.getElementById('lim-contextThreshold').value) || 60) / 100,
+      wrapUpAtContext: (parseInt(document.getElementById('lim-wrapUpAtContext').value) || 45) / 100,
+    },
+    loopDetection: {
+      historySize: parseInt(document.getElementById('lim-historySize').value) || 100,
+      warningThreshold: parseInt(document.getElementById('lim-warningThreshold').value) || 40,
+      criticalThreshold: parseInt(document.getElementById('lim-criticalThreshold').value) || 80,
+    },
+    failureThreshold: {
+      maxToolCallsPerTask: parseInt(document.getElementById('lim-maxToolCallsPerTask').value) || 50,
+      maxRetriesPerAction: parseInt(document.getElementById('lim-maxRetriesPerAction').value) || 3,
+      maxConsecutiveFailures: parseInt(document.getElementById('lim-maxConsecutiveFailures').value) || 5,
+      maxDurationMs: (parseInt(document.getElementById('lim-maxDurationMs').value) || 30) * 60000,
+    },
+  }
+  try {
+    await api('/shield', { method: 'POST', body: JSON.stringify(cfg) })
+    const s = document.getElementById('shieldSaveStatus')
+    s.style.display = 'inline'
+    setTimeout(function() { s.style.display = 'none' }, 2000)
+    toast('配置已保存')
+  } catch (e) { toast('保存失败: ' + e.message, 'error') }
+}
+
+function resetShieldDefaults() {
+  // 默认值，与 shield/index.ts DEFAULT_CONFIG 保持一致
+  setVal('lim-maxIterations', 100)
+  setVal('lim-maxContextRestarts', 5)
+  setVal('lim-contextThreshold', 60)
+  setVal('lim-wrapUpAtContext', 45)
+  setVal('lim-historySize', 100)
+  setVal('lim-warningThreshold', 40)
+  setVal('lim-criticalThreshold', 80)
+  setVal('lim-maxToolCallsPerTask', 50)
+  setVal('lim-maxRetriesPerAction', 3)
+  setVal('lim-maxConsecutiveFailures', 5)
+  setVal('lim-maxDurationMs', 30)
+  // 立即保存默认配置
+  saveShieldConfig()
+}
+
+async function toggleAutoMode() {
+  const r = await api('/automation', { method: 'POST', body: '{}' })
+  updateAutoToggle(r.autoMode)
+  toast(r.autoMode ? '⚡ 自动模式开启' : '⏸ 手动模式')
+}
+function updateAutoToggle(mode) {
+  const btn = document.getElementById('autoToggleBtn')
+  if (btn) { btn.style.background = mode ? 'var(--green)' : ''; btn.style.color = mode ? '#fff' : ''; btn.textContent = mode ? '⚡ 自动' : '⏸ 手动' }
+}
+async function loadAll() { await Promise.all([loadTasks(), loadSkills(), loadStats(), loadShield(), loadModels()]); const r = await api("/automation"); updateAutoToggle(r.autoMode) }
+
+// ===== 任务聊天 =====
+async function sendChat() {
+  const input = document.getElementById('traceChatInput')
+  const msg = input.value.trim()
+  if (!msg) return
+  if (!activeTraceTab) { toast('请先选择一个执行中的任务', 'error'); return }
+  try {
+    appendTraceToTask(activeTraceTab, '💬', '你: ' + msg)
+    input.value = ''
+    const r = await api('/tasks/' + activeTraceTab + '/chat', { method: 'POST', body: JSON.stringify({ message: msg }) })
+    if (r.status === 'sent') {
+      // 消息已广播，agent 会通过 SSE 响应
+    } else if (r.status === 'redirected') {
+      appendTraceToTask(activeTraceTab, '🔄', '已重定向: ' + msg)
+      toast('已发送并重定向', 'info')
+    }
+  } catch (e) {
+    appendTraceToTask(activeTraceTab, '❌', '发送失败: ' + e.message, true)
+  }
+}
+
+loadAll()
+setInterval(loadStats, 5000)
+setInterval(loadTasks, 15000)
+</script>
+</body>
+</html>

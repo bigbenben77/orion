@@ -1,0 +1,41 @@
+{
+  "name": "orion",
+  "version": "0.1.0",
+  "description": "🧠 Orion — AI 驱动的智能工作站框架",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "orion": "bin/orion.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "preview": "node dist/index.js"
+  },
+  "keywords": [
+    "ai",
+    "task-management",
+    "workflow",
+    "developer-tools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "commander": "^15.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    ".orion/skills/",
+    "package.json",
+    "tsconfig.json"
+  ]
+}
